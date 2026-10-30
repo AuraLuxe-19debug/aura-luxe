@@ -329,11 +329,17 @@
 
   <script>
     // ==========================================
-    // CONFIGURA AQUÍ TUS CREDENCIALES DE JSONBIN
+    // INGRESA TUS CREDENCIALES DE JSONBIN AQUÍ:
     // ==========================================
     const BIN_ID = "6ae41607ac6210605a5de676"; 
     const MASTER_KEY = "$2a$10$vE9aM02bx2nrQYuIb4pzR.iG8wgbEZLmmvEOkTVM9NEpT9Hc04Lki"; 
     const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+
+    const DEFAULT_PRODUCTS = [
+      { id: 1, title: "Espada Oro Dama | Le Chameau 100 ML", category: "perfume", price: 189000, oldPrice: 260000, tag: "NUEVO", desc: "Frutal, floral y ambarino.", img: "https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?w=500&auto=format&fit=crop" },
+      { id: 2, title: "Black Diamond 100 ML", category: "perfume", price: 190000, oldPrice: 250000, tag: "MÁS VENDIDO", desc: "Especiado y ambarino.", img: "https://images.unsplash.com/photo-1541643600914-78b084683601?w=500&auto=format&fit=crop" },
+      { id: 3, title: "Cadena Tejido Chino 18K", category: "joyeria", price: 140000, oldPrice: 180000, tag: "GARANTÍA 18K", desc: "Tres capas de oro 18K.", img: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=500&auto=format&fit=crop" }
+    ];
 
     let products = [];
     let cart = JSON.parse(localStorage.getItem('al_cart')) || [];
@@ -342,20 +348,26 @@
 
     async function fetchProductsFromCloud() {
       try {
+        if (!BIN_ID || BIN_ID.includes("PEGAR_TU_BIN_ID")) {
+          throw new Error("Credenciales no configuradas");
+        }
         const response = await fetch(`${JSONBIN_URL}/latest`, {
           headers: { 'X-Master-Key': MASTER_KEY }
         });
+        if(!response.ok) throw new Error("Error en respuesta de API");
         const data = await response.json();
         products = data.record || [];
         renderProducts(products);
       } catch (error) {
-        console.error("Error al cargar productos de la nube:", error);
-        document.getElementById('productGrid').innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--gold-primary);">Error al sincronizar con la nube. Revisa las credenciales de JSONbin.</p>`;
+        console.warn("Cargando productos por defecto...", error);
+        products = DEFAULT_PRODUCTS;
+        renderProducts(products);
       }
     }
 
     async function syncProductsToCloud() {
       try {
+        if (!BIN_ID || BIN_ID.includes("PEGAR_TU_BIN_ID")) return;
         await fetch(JSONBIN_URL, {
           method: 'PUT',
           headers: {
