@@ -99,10 +99,10 @@
     .admin-product-row { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); padding: 10px 15px; border-radius: 6px; margin-bottom: 10px; }
     .btn-danger { background: #d9534f; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; }
 
-    .reviews-section { max-width: 1200px; margin: 60px auto 20px; padding: 0 20px; }
-    .reviews-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 25px; }
-    .review-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px; padding: 20px; }
-    
+    .admin-box { background: rgba(212, 175, 55, 0.05); border: 1px solid var(--gold-primary); padding: 15px; border-radius: 8px; margin-bottom: 25px; }
+
+    .loading-spinner { text-align: center; color: var(--gold-primary); font-size: 1.2rem; padding: 50px; }
+
     footer { border-top: 1px solid var(--border-color); margin-top: 60px; padding: 40px 20px; background: #050505; color: var(--text-muted); font-size: 0.85rem; }
     .footer-grid { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 30px; margin-bottom: 30px; }
     .footer-col h4 { color: var(--gold-primary); margin-bottom: 15px; font-size: 1rem; }
@@ -136,7 +136,7 @@
         <button class="action-btn editor-btn" onclick="openAdminModal()">
           <i class="fa-solid fa-sliders"></i> Modo Editor
         </button>
-        <a href="https://wa.me/573000000000" target="_blank" class="action-btn"><i class="fa-brands fa-whatsapp"></i></a>
+        <a id="headerWpBtn" href="#" target="_blank" class="action-btn"><i class="fa-brands fa-whatsapp"></i></a>
         <button class="action-btn" onclick="openCartModal()">
           <i class="fa-solid fa-cart-shopping"></i> <span class="cart-badge" id="cartCount">0</span>
         </button>
@@ -195,7 +195,9 @@
       <button class="filter-btn" onclick="filterCategory('outlet')">🏷️ Outlet Liquidación</button>
     </div>
 
-    <div class="product-grid" id="productGrid"></div>
+    <div class="product-grid" id="productGrid">
+      <div class="loading-spinner"><i class="fa-solid fa-spinner fa-spin"></i> Cargando catálogo sincronizado en la nube...</div>
+    </div>
   </main>
 
   <div class="modal" id="productModal">
@@ -247,12 +249,20 @@
   <div class="modal" id="adminModal">
     <div class="modal-content" style="max-width: 650px;">
       <span class="close-modal" onclick="closeModal('adminModal')">×</span>
-      <h2 style="color: var(--gold-primary); margin-bottom: 15px;"><i class="fa-solid fa-sliders"></i> Modo Editor & Inventario</h2>
+      <h2 style="color: var(--gold-primary); margin-bottom: 15px;"><i class="fa-solid fa-sliders"></i> Panel de Control & Sincronización</h2>
       
+      <div class="admin-box">
+        <h3 style="font-size: 0.95rem; color: var(--gold-primary); margin-bottom: 10px;"><i class="fa-brands fa-whatsapp"></i> WhatsApp Receptor</h3>
+        <div style="display: flex; gap: 10px;">
+          <input type="text" id="adminWpInput" style="flex-grow:1; padding:8px; background:var(--bg-dark); border:1px solid var(--border-color); color:#fff; border-radius:4px;" placeholder="573000000000">
+          <button onclick="saveWhatsappNumber()" class="btn-gold" style="padding: 8px 15px; font-size: 0.8rem;">Guardar Número</button>
+        </div>
+      </div>
+
       <div style="margin-bottom: 25px;">
-        <h3 style="font-size: 0.95rem; color: var(--gold-primary); margin-bottom: 10px;">Agregar Nuevo Producto / Combo</h3>
+        <h3 style="font-size: 0.95rem; color: var(--gold-primary); margin-bottom: 10px;">Agregar Nuevo Producto en la Nube</h3>
         <form onsubmit="addNewProduct(event)">
-          <div class="form-group"><label>Título del Producto</label><input type="text" id="newTitle" required placeholder="Ej: Combo Supremo: Lattafa + Cadena"></div>
+          <div class="form-group"><label>Título del Producto</label><input type="text" id="newTitle" required placeholder="Ej: Combo Lattafa"></div>
           <div class="form-group">
             <label>Categoría</label>
             <select id="newCat">
@@ -264,41 +274,19 @@
           </div>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
             <div class="form-group"><label>Precio Actual (COP)</label><input type="number" id="newPrice" required placeholder="189000"></div>
-            <div class="form-group"><label>Precio Anterior (Tachado)</label><input type="number" id="newOldPrice" placeholder="260000"></div>
+            <div class="form-group"><label>Precio Anterior</label><input type="number" id="newOldPrice" placeholder="260000"></div>
           </div>
-          <div class="form-group"><label>Etiqueta (Ej: NUEVO, MÁS VENDIDO, 30% OFF)</label><input type="text" id="newTag" placeholder="NUEVO"></div>
-          <div class="form-group"><label>Descripción</label><textarea id="newDesc" rows="2" placeholder="Notas olfativas o detalles de material..."></textarea></div>
-          <div class="form-group"><label>URL de la Imagen (O link directo)</label><input type="url" id="newImg" required placeholder="https://images.unsplash.com/..."></div>
-          <button type="submit" class="btn-gold" style="width: 100%; justify-content: center;">Guardar Producto en el Catálogo</button>
+          <div class="form-group"><label>Etiqueta</label><input type="text" id="newTag" placeholder="NUEVO"></div>
+          <div class="form-group"><label>Descripción</label><textarea id="newDesc" rows="2" placeholder="Notas olfativas..."></textarea></div>
+          <div class="form-group"><label>URL de la Imagen</label><input type="url" id="newImg" required placeholder="https://images.unsplash.com/..."></div>
+          <button type="submit" id="saveProdBtn" class="btn-gold" style="width: 100%; justify-content: center;">Guardar y Sincronizar Globalmente</button>
         </form>
       </div>
 
-      <h3 style="font-size: 0.95rem; color: var(--gold-primary); margin-bottom: 10px; border-top: 1px solid var(--border-color); pt: 15px;">Listado de Productos (Editar / Eliminar Errores)</h3>
+      <h3 style="font-size: 0.95rem; color: var(--gold-primary); margin-bottom: 10px; border-top: 1px solid var(--border-color); padding-top: 15px;">Listado Global de Productos</h3>
       <div id="adminProductList" style="max-height: 250px; overflow-y: auto;"></div>
     </div>
   </div>
-
-  <section class="reviews-section">
-    <h2 class="section-title" style="text-align: center;">Clientes Satisfechos</h2>
-    <p class="section-subtitle" style="text-align: center;">Experiencias reales de quienes eligen nuestra distinción</p>
-    <div class="reviews-grid">
-      <div class="review-card">
-        <div class="product-rating"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
-        <p style="font-size: 0.85rem; color: var(--text-light); margin-bottom: 12px;">"El perfume Lattafa Khamrah es 100% original, la fijación dura todo el día. El empaque llegó impecable."</p>
-        <span style="font-size: 0.75rem; color: var(--gold-primary); font-weight: 600;">Valeria M. — <span style="color:var(--whatsapp-green);">Comprador Verificado</span></span>
-      </div>
-      <div class="review-card">
-        <div class="product-rating"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
-        <p style="font-size: 0.85rem; color: var(--text-light); margin-bottom: 12px;">"Compré la cadena tejida de oro laminado para regalo de aniversario. El brillo es espectacular, parece oro sólido."</p>
-        <span style="font-size: 0.75rem; color: var(--gold-primary); font-weight: 600;">Carlos E. — <span style="color:var(--whatsapp-green);">Comprador Verificado</span></span>
-      </div>
-      <div class="review-card">
-        <div class="product-rating"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
-        <p style="font-size: 0.85rem; color: var(--text-light); margin-bottom: 12px;">"El combo de regalo superó mis expectativas. Pagué contra entrega sin complicaciones en la puerta de mi casa."</p>
-        <span style="font-size: 0.75rem; color: var(--gold-primary); font-weight: 600;">Diana P. — <span style="color:var(--whatsapp-green);">Comprador Verificado</span></span>
-      </div>
-    </div>
-  </section>
 
   <footer>
     <div class="footer-grid">
@@ -309,9 +297,9 @@
       <div class="footer-col">
         <h4>CATEGORÍAS</h4>
         <ul>
-          <li><a href="#catalogo" onclick="filterCategory('perfume')">Perfumes Árabes Lattafa/Armaf</a></li>
+          <li><a href="#catalogo" onclick="filterCategory('perfume')">Perfumes Árabes</a></li>
           <li><a href="#catalogo" onclick="filterCategory('joyeria')">Cadenas & Dijes 18K</a></li>
-          <li><a href="#catalogo" onclick="filterCategory('combo')">Combos Regalo Navideño</a></li>
+          <li><a href="#catalogo" onclick="filterCategory('combo')">Combos Regalo</a></li>
           <li><a href="#catalogo" onclick="filterCategory('outlet')">Outlet Liquidación</a></li>
         </ul>
       </div>
@@ -340,24 +328,69 @@
   </footer>
 
   <script>
-    const DEFAULT_PRODUCTS = [
-      { id: 1, title: "Espada Oro Dama | Le Chameau 100 ML", category: "perfume", price: 189000, oldPrice: 260000, tag: "NUEVO", desc: "Frutal, floral y ambarino. La frescura de la magnolia y la lavanda se une a la cremosidad del sándalo y la profundidad del ámbar.", img: "https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?w=500&auto=format&fit=crop" },
-      { id: 2, title: "Black Diamond 100 ML", category: "perfume", price: 190000, oldPrice: 250000, tag: "MÁS VENDIDO", desc: "Especiado, floral y ambarino. Un contraste fascinante entre especias finas, la cremosidad de las flores blancas con coco y vainilla.", img: "https://images.unsplash.com/photo-1541643600914-78b084683601?w=500&auto=format&fit=crop" },
-      { id: 3, title: "African Leopard Unisex | Amaran 85 ML", category: "perfume", price: 189000, oldPrice: 285000, tag: "MÁS VENDIDO", desc: "Cálido, especiado y amaderado. La vitalidad de los cítricos y las especias combinada con la elegancia del cuero y la madera.", img: "https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=500&auto=format&fit=crop" },
-      { id: 4, title: "Cadena Tejido Chino 18K (60cm x 4mm)", category: "joyeria", price: 140000, oldPrice: 180000, tag: "GARANTÍA 18K", desc: "Elaborada en tres capas de oro de 18K con broche de seguridad. No se pela ni pierde brillo.", img: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=500&auto=format&fit=crop" },
-      { id: 5, title: "Combo Supremo: Lattafa + Cadena Chino 18K", category: "combo", price: 289000, oldPrice: 365000, tag: "🎁 ESPECIAL NAVIDAD", desc: "Incluye Perfume Árabe a elección + Cadena fina en Oro Laminado. Presentación especial en caja de regalo de lujo.", img: "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=500&auto=format&fit=crop" },
-      { id: 6, title: "Pulsera Tejido Escalera 18K Hombre/Mujer", category: "joyeria", price: 89000, oldPrice: 120000, tag: "TENDENCIA", desc: "Acabado de alta pulimentación resistente al agua, perfumes y sudoración.", img: "https://images.unsplash.com/photo-1611591475281-2292f750b38c?w=500&auto=format&fit=crop" }
-    ];
+    // ==========================================
+    // CONFIGURA AQUÍ TUS CREDENCIALES DE JSONBIN
+    // ==========================================
+    const BIN_ID = 6ae41607ac6210605a5de676; 
+    const MASTER_KEY = $2a$10$vE9aM02bx2nrQYuIb4pzR.iG8wgbEZLmmvEOkTVM9NEpT9Hc04Lki; 
+    const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
-    let products = JSON.parse(localStorage.getItem('al_products')) || DEFAULT_PRODUCTS;
+    let products = [];
     let cart = JSON.parse(localStorage.getItem('al_cart')) || [];
+    let whatsappNumber = localStorage.getItem('al_whatsapp') || "573000000000";
     let activeProduct = null;
+
+    async function fetchProductsFromCloud() {
+      try {
+        const response = await fetch(`${JSONBIN_URL}/latest`, {
+          headers: { 'X-Master-Key': MASTER_KEY }
+        });
+        const data = await response.json();
+        products = data.record || [];
+        renderProducts(products);
+      } catch (error) {
+        console.error("Error al cargar productos de la nube:", error);
+        document.getElementById('productGrid').innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--gold-primary);">Error al sincronizar con la nube. Revisa las credenciales de JSONbin.</p>`;
+      }
+    }
+
+    async function syncProductsToCloud() {
+      try {
+        await fetch(JSONBIN_URL, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Master-Key': MASTER_KEY
+          },
+          body: JSON.stringify(products)
+        });
+        renderProducts(products);
+        renderAdminList();
+      } catch (error) {
+        alert("Error al guardar en la nube.");
+      }
+    }
+
+    function initWhatsappLinks() {
+      document.getElementById('headerWpBtn').href = `https://wa.me/${whatsappNumber}`;
+      document.getElementById('adminWpInput').value = whatsappNumber;
+    }
+
+    function saveWhatsappNumber() {
+      const num = document.getElementById('adminWpInput').value.trim();
+      if(num) {
+        whatsappNumber = num.replace(/[^0-9]/g, '');
+        localStorage.setItem('al_whatsapp', whatsappNumber);
+        initWhatsappLinks();
+        alert("¡Número de WhatsApp actualizado!");
+      }
+    }
 
     function renderProducts(items) {
       const grid = document.getElementById('productGrid');
       grid.innerHTML = '';
       if(items.length === 0) {
-        grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 40px;">No se encontraron productos en esta categoría.</p>`;
+        grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 40px;">No se encontraron productos.</p>`;
         return;
       }
       items.forEach(p => {
@@ -486,12 +519,13 @@
       msg += `\n*Dirección:* ${addr}`;
       msg += `\n*Método de Pago:* ${pay}`;
 
-      window.open(`https://wa.me/573000000000?text=${encodeURIComponent(msg)}`, '_blank');
+      window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(msg)}`, '_blank');
     }
 
     function openAdminModal() {
       if(prompt("Ingresa la clave de administración:") === "1234") {
         renderAdminList();
+        document.getElementById('adminWpInput').value = whatsappNumber;
         document.getElementById('adminModal').style.display = 'flex';
       } else if(prompt !== null) {
         alert("Clave incorrecta.");
@@ -514,8 +548,12 @@
       });
     }
 
-    function addNewProduct(e) {
+    async function addNewProduct(e) {
       e.preventDefault();
+      const btn = document.getElementById('saveProdBtn');
+      btn.innerText = "Sincronizando con la nube...";
+      btn.disabled = true;
+
       const newP = {
         id: Date.now(),
         title: document.getElementById('newTitle').value,
@@ -527,25 +565,25 @@
         img: document.getElementById('newImg').value
       };
       products.unshift(newP);
-      localStorage.setItem('al_products', JSON.stringify(products));
-      renderProducts(products);
-      renderAdminList();
-      alert("¡Producto agregado con éxito!");
+      await syncProductsToCloud();
+      
+      btn.innerText = "Guardar y Sincronizar Globalmente";
+      btn.disabled = false;
+      alert("¡Producto guardado e inmediatamente visible para todos tus clientes!");
       e.target.reset();
     }
 
-    function deleteProduct(id) {
-      if(confirm("¿Estás segura de eliminar este producto?")) {
+    async function deleteProduct(id) {
+      if(confirm("¿Estás segura de eliminar este producto globalmente?")) {
         products = products.filter(p => p.id !== id);
-        localStorage.setItem('al_products', JSON.stringify(products));
-        renderProducts(products);
-        renderAdminList();
+        await syncProductsToCloud();
       }
     }
 
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
-    renderProducts(products);
+    initWhatsappLinks();
+    fetchProductsFromCloud();
   </script>
 </body>
 </html>
