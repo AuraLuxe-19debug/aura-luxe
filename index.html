@@ -100,8 +100,6 @@
     .admin-product-row { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); padding: 10px 15px; border-radius: 6px; margin-bottom: 10px; }
     .btn-danger { background: #d9534f; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; }
 
-    .loading-spinner { text-align: center; color: var(--gold-primary); font-size: 1.2rem; padding: 50px; }
-
     footer { border-top: 1px solid var(--border-color); margin-top: 60px; padding: 40px 20px; background: #050505; color: var(--text-muted); font-size: 0.85rem; }
     .footer-grid { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 30px; margin-bottom: 30px; }
     .footer-col h4 { color: var(--gold-primary); margin-bottom: 15px; font-size: 1rem; }
@@ -194,9 +192,7 @@
       <button class="filter-btn" onclick="filterCategory('outlet')">🏷️ Outlet Liquidación</button>
     </div>
 
-    <div class="product-grid" id="productGrid">
-      <div class="loading-spinner"><i class="fa-solid fa-spinner fa-spin"></i> Cargando catálogo sincronizado en la nube...</div>
-    </div>
+    <div class="product-grid" id="productGrid"></div>
   </main>
 
   <div class="modal" id="productModal">
@@ -248,12 +244,12 @@
   <div class="modal" id="adminModal">
     <div class="modal-content" style="max-width: 650px;">
       <span class="close-modal" onclick="closeModal('adminModal')">×</span>
-      <h2 style="color: var(--gold-primary); margin-bottom: 15px;"><i class="fa-solid fa-sliders"></i> Panel de Control & Sincronización</h2>
+      <h2 style="color: var(--gold-primary); margin-bottom: 15px;"><i class="fa-solid fa-sliders"></i> Panel de Control - AURA & LUXE</h2>
 
       <div style="margin-bottom: 25px;">
-        <h3 style="font-size: 0.95rem; color: var(--gold-primary); margin-bottom: 10px;">Subir Producto con Foto de Archivo</h3>
+        <h3 style="font-size: 0.95rem; color: var(--gold-primary); margin-bottom: 10px;">Subir Nuevo Producto (Foto desde el dispositivo)</h3>
         <form onsubmit="addNewProduct(event)">
-          <div class="form-group"><label>Título del Producto</label><input type="text" id="newTitle" required placeholder="Ej: Combo Lattafa"></div>
+          <div class="form-group"><label>Título del Producto</label><input type="text" id="newTitle" required placeholder="Ej: Perfume Lattafa Asad"></div>
           <div class="form-group">
             <label>Categoría</label>
             <select id="newCat">
@@ -265,21 +261,21 @@
           </div>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
             <div class="form-group"><label>Precio Actual (COP)</label><input type="number" id="newPrice" required placeholder="189000"></div>
-            <div class="form-group"><label>Precio Anterior</label><input type="number" id="newOldPrice" placeholder="260000"></div>
+            <div class="form-group"><label>Precio Anterior (Opcional)</label><input type="number" id="newOldPrice" placeholder="260000"></div>
           </div>
-          <div class="form-group"><label>Etiqueta</label><input type="text" id="newTag" placeholder="NUEVO"></div>
+          <div class="form-group"><label>Etiqueta (Ej: NUEVO, MÁS VENDIDO)</label><input type="text" id="newTag" placeholder="NUEVO"></div>
           <div class="form-group"><label>Descripción</label><textarea id="newDesc" rows="2" placeholder="Notas olfativas..."></textarea></div>
           
           <div class="form-group">
-            <label>Seleccionar Imagen desde tu Dispositivo</label>
+            <label>Seleccionar Imagen del Producto</label>
             <input type="file" id="newImgFile" accept="image/*" required>
           </div>
 
-          <button type="submit" id="saveProdBtn" class="btn-gold" style="width: 100%; justify-content: center;">Guardar y Sincronizar Globalmente</button>
+          <button type="submit" id="saveProdBtn" class="btn-gold" style="width: 100%; justify-content: center;">Guardar Producto en la Tienda</button>
         </form>
       </div>
 
-      <h3 style="font-size: 0.95rem; color: var(--gold-primary); margin-bottom: 10px; border-top: 1px solid var(--border-color); padding-top: 15px;">Listado Global de Productos</h3>
+      <h3 style="font-size: 0.95rem; color: var(--gold-primary); margin-bottom: 10px; border-top: 1px solid var(--border-color); padding-top: 15px;">Administrar Productos Existentes</h3>
       <div id="adminProductList" style="max-height: 250px; overflow-y: auto;"></div>
     </div>
   </div>
@@ -324,59 +320,25 @@
   </footer>
 
   <script>
-    // ==========================================================
-    // TUS CREDENCIALES REALES DE JSONBIN YA CONFIGURADAS
-    // ==========================================================
-    const BIN_ID = "6ae41607ac6210605a5de676";       
-    const MASTER_KEY = "$2a$10$ve9AM02bx2nrQYuIb4pzR.iG8wgbEZLmmvEOkTVM9NEpT9Hc04Lki";   
+    // NÚMERO DE WHATSAPP FIJO Y ANCLADO
+    const WHATSAPP_NUMBER = "573115082078";
 
-    const WHATSAPP_NUMBER = "573115082078"; 
-    const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+    // CATÁLOGO INICIAL DE RESPALDO (si está vacío)
+    const DEFAULT_PRODUCTS = [
+      { id: 1, title: "Espada Oro Dama | Le Chameau 100 ML", category: "perfume", price: 189000, oldPrice: 260000, tag: "NUEVO", desc: "Frutal, floral y ambarino.", img: "https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?w=500&auto=format&fit=crop" },
+      { id: 2, title: "Black Diamond 100 ML", category: "perfume", price: 190000, oldPrice: 250000, tag: "MÁS VENDIDO", desc: "Especiado y ambarino.", img: "https://images.unsplash.com/photo-1541643600914-78b084683601?w=500&auto=format&fit=crop" },
+      { id: 3, title: "Cadena Tejido Chino 18K", category: "joyeria", price: 140000, oldPrice: 180000, tag: "GARANTÍA 18K", desc: "Tres capas de oro 18K.", img: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=500&auto=format&fit=crop" }
+    ];
 
-    let products = [];
+    let products = JSON.parse(localStorage.getItem('al_products')) || DEFAULT_PRODUCTS;
     let cart = JSON.parse(localStorage.getItem('al_cart')) || [];
     let activeProduct = null;
-
-    async function fetchProductsFromCloud() {
-      try {
-        const response = await fetch(JSONBIN_URL, {
-          headers: { 'X-Master-Key': MASTER_KEY }
-        });
-        if(!response.ok) throw new Error("Error en respuesta de API");
-        const data = await response.json();
-        products = data.record || [];
-        renderProducts(products);
-      } catch (error) {
-        console.warn("Error cargando de la nube:", error);
-        document.getElementById('productGrid').innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--gold-primary);">Error de conexión con la nube. Verifica tu conexión o credenciales.</p>`;
-      }
-    }
-
-    async function syncProductsToCloud() {
-      try {
-        const response = await fetch(JSONBIN_URL, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Master-Key': MASTER_KEY
-          },
-          body: JSON.stringify(products)
-        });
-        
-        if(!response.ok) throw new Error("No se pudo guardar en la nube");
-        
-        renderProducts(products);
-        renderAdminList();
-      } catch (error) {
-        alert("Error al sincronizar con la nube. Asegúrate de que el Bin en JSONbin no esté protegido contra escritura.");
-      }
-    }
 
     function renderProducts(items) {
       const grid = document.getElementById('productGrid');
       grid.innerHTML = '';
       if(!items || items.length === 0) {
-        grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 40px;">No hay productos registrados todavía. Entra al Modo Editor (clave 1234) para agregar el primero con foto de archivo.</p>`;
+        grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 40px;">No hay productos registrados todavía. Entra al Modo Editor (clave 1234) para agregar el primero.</p>`;
         return;
       }
       items.forEach(p => {
@@ -529,7 +491,7 @@
           <div class="admin-product-row">
             <div>
               <strong>${p.title}</strong><br>
-              <small style="color:var(--gold-primary);">$${Number(p.price).toLocaleString('es-CO')} COP (${getCategoryName(p.category)})</small>
+              <small style="color:var(--gold-primary);">$${Number(p.price).toLocaleString('es-CO')} COP</small>
             </div>
             <button onclick="deleteProduct(${p.id})" class="btn-danger"><i class="fa-solid fa-trash"></i> Eliminar</button>
           </div>
@@ -537,7 +499,7 @@
       });
     }
 
-    async function addNewProduct(e) {
+    function addNewProduct(e) {
       e.preventDefault();
       const fileInput = document.getElementById('newImgFile');
       if (fileInput.files.length === 0) return alert("Selecciona una imagen.");
@@ -545,11 +507,7 @@
       const file = fileInput.files[0];
       const reader = new FileReader();
 
-      reader.onload = async function(uploadEvent) {
-        const btn = document.getElementById('saveProdBtn');
-        btn.innerText = "Sincronizando con la nube...";
-        btn.disabled = true;
-
+      reader.onload = function(uploadEvent) {
         const newP = {
           id: Date.now(),
           title: document.getElementById('newTitle').value,
@@ -558,31 +516,34 @@
           oldPrice: document.getElementById('newOldPrice').value ? parseInt(document.getElementById('newOldPrice').value) : null,
           tag: document.getElementById('newTag').value,
           desc: document.getElementById('newDesc').value,
-          img: uploadEvent.target.result // Foto cargada directamente como archivo
+          img: uploadEvent.target.result // Carga de foto directa por archivo local
         };
         
         products.unshift(newP);
-        await syncProductsToCloud();
+        localStorage.setItem('al_products', JSON.stringify(products));
+        renderProducts(products);
+        renderAdminList();
         
-        btn.innerText = "Guardar y Sincronizar Globalmente";
-        btn.disabled = false;
-        alert("¡Producto y foto guardados correctamente en la nube!");
+        alert("¡Producto y foto guardados correctamente en tu tienda!");
         e.target.reset();
+        closeModal('adminModal');
       };
 
       reader.readAsDataURL(file);
     }
 
-    async function deleteProduct(id) {
-      if(confirm("¿Estás segura de eliminar este producto globalmente?")) {
+    function deleteProduct(id) {
+      if(confirm("¿Estás segura de eliminar este producto?")) {
         products = products.filter(p => p.id !== id);
-        await syncProductsToCloud();
+        localStorage.setItem('al_products', JSON.stringify(products));
+        renderProducts(products);
+        renderAdminList();
       }
     }
 
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
-    fetchProductsFromCloud();
+    renderProducts(products);
   </script>
 </body>
 </html>
