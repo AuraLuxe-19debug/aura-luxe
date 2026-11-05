@@ -320,12 +320,14 @@
   </footer>
 
   <script>
-    // ==========================================
-    // TUS CREDENCIALES DE JSONBIN Y WHATSAPP FIJO
-    // ==========================================
-    const BIN_ID = "678e06f1acd3cb34a8c9e559"; // (O tu Bin ID actual)
-    const MASTER_KEY = "$2a$10$..."; // (O tu Master Key actual)
-    const WHATSAPP_NUMBER = "573115082078"; // Número fijo anclado
+    // ==========================================================
+    // 1. PEGA AQUÍ TUS CREDENCIALES DE JSONBIN (ENTRE COMILLAS)
+    // ==========================================================
+    const BIN_ID = "6ae41607ac6210605a5de676";       
+    const MASTER_KEY = "$2a$10$vE9aM02bx2nrQYuIb4pzR.iG8wgbEZLmmvEOkTVM9NEpT9Hc04Lki";   
+
+    // WHATSAPP FIJO ANCLADO PARA LA TIENDA
+    const WHATSAPP_NUMBER = "573115082078"; 
 
     const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
@@ -341,5 +343,237 @@
 
     async function fetchProductsFromCloud() {
       try {
-        if (!BIN_ID || BIN_ID.includes("PEGAR_TU_BIN_ID")) {
-          throw new Error("
+        if (!BIN_ID || BIN_ID.includes("6ae41607ac6210605a5de676")) {
+          throw new Error("Credenciales no configuradas");
+        }
+        const response = await fetch(`${JSONBIN_URL}/latest`, {
+          headers: { 'X-Master-Key': MASTER_KEY }
+        });
+        if(!response.ok) throw new Error("Error en respuesta de API");
+        const data = await response.json();
+        products = data.record || [];
+        renderProducts(products);
+      } catch (error) {
+        console.warn("Cargando productos por defecto...", error);
+        products = DEFAULT_PRODUCTS;
+        renderProducts(products);
+      }
+    }
+
+    async function syncProductsToCloud() {
+      try {
+        if (!BIN_ID || BIN_ID.includes("6ae41607ac6210605a5de676")) return;
+        await fetch(JSONBIN_URL, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Master-Key': MASTER_KEY
+          },
+          body: JSON.stringify(products)
+        });
+        renderProducts(products);
+        renderAdminList();
+      } catch (error) {
+        alert("Error al guardar en la nube.");
+      }
+    }
+
+    function renderProducts(items) {
+      const grid = document.getElementById('productGrid');
+      grid.innerHTML = '';
+      if(items.length === 0) {
+        grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 40px;">No se encontraron productos.</p>`;
+        return;
+      }
+      items.forEach(p => {
+        grid.innerHTML += `
+          <div class="product-card">
+            ${p.tag ? `<span class="product-tag">${p.tag}</span>` : ''}
+            <img src="${p.img}" class="product-img" onclick="openProductDetail(${p.id})">
+            <div class="product-info">
+              <span class="product-category">${getCategoryName(p.category)}</span>
+              <h3 class="product-title" onclick="openProductDetail(${p.id})">${p.title}</h3>
+              <p class="product-desc">${p.desc || ''}</p>
+              <div class="product-rating"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i> (5.0)</div>
+              <div class="product-pricing">
+                <span class="product-price">$${p.price.toLocaleString('es-CO')} COP</span>
+                ${p.oldPrice ? `<span class="product-old-price">$${p.oldPrice.toLocaleString('es-CO')}</span>` : ''}
+              </div>
+              <button class="btn-add" onclick="addToCart(${p.id})"><i class="fa-solid fa-cart-shopping"></i> Añadir al Carrito</button>
+            </div>
+          </div>
+        `;
+      });
+      updateCartBadge();
+    }
+
+    function getCategoryName(cat) {
+      if(cat === 'perfume') return 'Perfumes Árabes';
+      if(cat === 'joyeria') return 'Oro Laminado 18K';
+      if(cat === 'combo') return '🎁 Combos & Regalos';
+      if(cat === 'outlet') return '🏷️ Outlet Liquidación';
+      return cat;
+    }
+
+    function filterCategory(cat) {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+      if(cat === 'all') {
+        renderProducts(products);
+      } else {
+        renderProducts(products.filter(p => p.category === cat));
+      }
+    }
+
+    function filterBySearch() {
+      const query = document.getElementById('searchInput').value.toLowerCase();
+      const filtered = products.filter(p => p.title.toLowerCase().includes(query) || (p.desc && p.desc.toLowerCase().includes(query)));
+      renderProducts(filtered);
+    }
+
+    function openProductDetail(id) {
+      activeProduct = products.find(p => p.id === id);
+      document.getElementById('modalImg').src = activeProduct.img;
+      document.getElementById('modalCat').innerText = getCategoryName(activeProduct.category);
+      document.getElementById('modalTitle').innerText = activeProduct.title;
+      document.getElementById('modalPrice').innerText = `$${activeProduct.price.toLocaleString('es-CO')} COP`;
+      document.getElementById('modalOldPrice').innerText = activeProduct.oldPrice ? `$${activeProduct.oldPrice.toLocaleString('es-CO')} COP` : '';
+      document.getElementById('modalDesc').innerText = activeProduct.desc || '';
+      document.getElementById('productModal').style.display = 'flex';
+    }
+
+    function addModalToCart() {
+      if(activeProduct) {
+        cart.push(activeProduct);
+        localStorage.setItem('al_cart', JSON.stringify(cart));
+        updateCartBadge();
+        closeModal('productModal');
+        openCartModal();
+      }
+    }
+
+    function addToCart(id) {
+      const prod = products.find(p => p.id === id);
+      if(prod) {
+        cart.push(prod);
+        localStorage.setItem('al_cart', JSON.stringify(cart));
+        updateCartBadge();
+        openCartModal();
+      }
+    }
+
+    function updateCartBadge() {
+      document.getElementById('cartCount').innerText = cart.length;
+    }
+
+    function openCartModal() {
+      const list = document.getElementById('cartItemsList');
+      list.innerHTML = '';
+      let total = 0;
+      if(cart.length === 0) {
+        list.innerHTML = `<p style="text-align:center; color:var(--text-muted); padding:20px;">Tu carrito está vacío.</p>`;
+      }
+      cart.forEach((item, index) => {
+        total += item.price;
+        list.innerHTML += `
+          <div class="cart-item">
+            <div><strong>${item.title}</strong><br><small style="color:var(--gold-primary);">$${item.price.toLocaleString('es-CO')} COP</small></div>
+            <button onclick="removeFromCart(${index})" class="btn-danger"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        `;
+      });
+      document.getElementById('cartTotalSum').innerText = `$${total.toLocaleString('es-CO')} COP`;
+      document.getElementById('cartModal').style.display = 'flex';
+    }
+
+    function removeFromCart(index) {
+      cart.splice(index, 1);
+      localStorage.setItem('al_cart', JSON.stringify(cart));
+      openCartModal();
+      updateCartBadge();
+    }
+
+    function processCheckout(e) {
+      e.preventDefault();
+      if(cart.length === 0) return alert("Tu carrito está vacío.");
+      const name = document.getElementById('custName').value;
+      const addr = document.getElementById('custAddress').value;
+      const pay = document.getElementById('payMethod').value;
+      
+      let msg = `¡Hola AURA & LUXE! Deseo realizar el siguiente pedido:\n\n`;
+      let total = 0;
+      cart.forEach((item, i) => {
+        msg += `${i+1}. ${item.title} - $${item.price.toLocaleString('es-CO')} COP\n`;
+        total += item.price;
+      });
+      msg += `\n*Total a Pagar:* $${total.toLocaleString('es-CO')} COP`;
+      msg += `\n*Cliente:* ${name}`;
+      msg += `\n*Dirección:* ${addr}`;
+      msg += `\n*Método de Pago:* ${pay}`;
+
+      window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank');
+    }
+
+    function openAdminModal() {
+      if(prompt("Ingresa la clave de administración:") === "1234") {
+        renderAdminList();
+        document.getElementById('adminModal').style.display = 'flex';
+      } else if(prompt !== null) {
+        alert("Clave incorrecta.");
+      }
+    }
+
+    function renderAdminList() {
+      const list = document.getElementById('adminProductList');
+      list.innerHTML = '';
+      products.forEach((p, index) => {
+        list.innerHTML += `
+          <div class="admin-product-row">
+            <div>
+              <strong>${p.title}</strong><br>
+              <small style="color:var(--gold-primary);">$${p.price.toLocaleString('es-CO')} COP (${getCategoryName(p.category)})</small>
+            </div>
+            <button onclick="deleteProduct(${p.id})" class="btn-danger"><i class="fa-solid fa-trash"></i> Eliminar</button>
+          </div>
+        `;
+      });
+    }
+
+    async function addNewProduct(e) {
+      e.preventDefault();
+      const btn = document.getElementById('saveProdBtn');
+      btn.innerText = "Sincronizando con la nube...";
+      btn.disabled = true;
+
+      const newP = {
+        id: Date.now(),
+        title: document.getElementById('newTitle').value,
+        category: document.getElementById('newCat').value,
+        price: parseInt(document.getElementById('newPrice').value),
+        oldPrice: document.getElementById('newOldPrice').value ? parseInt(document.getElementById('newOldPrice').value) : null,
+        tag: document.getElementById('newTag').value,
+        desc: document.getElementById('newDesc').value,
+        img: document.getElementById('newImg').value
+      };
+      products.unshift(newP);
+      await syncProductsToCloud();
+      
+      btn.innerText = "Guardar y Sincronizar Globalmente";
+      btn.disabled = false;
+      alert("¡Producto guardado e inmediatamente visible para todos tus clientes!");
+      e.target.reset();
+    }
+
+    async function deleteProduct(id) {
+      if(confirm("¿Estás segura de eliminar este producto globalmente?")) {
+        products = products.filter(p => p.id !== id);
+        await syncProductsToCloud();
+      }
+    }
+
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+    fetchProductsFromCloud();
+  </script>
+</body>
+</html>
