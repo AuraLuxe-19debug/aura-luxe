@@ -325,10 +325,10 @@
 
   <script>
     // ==========================================================
-    // TUS CREDENCIALES DE JSONBIN (INGRESA TUS CÓDIGOS REALES AQUÍ)
+    // TUS CREDENCIALES REALES DE JSONBIN YA CONFIGURADAS
     // ==========================================================
     const BIN_ID = "6ae41607ac6210605a5de676";       
-    const MASTER_KEY = "$2a$10$vE9aM02bx2nrQYuIb4pzR.iG8wgbEZLmmvEOkTVM9NEpT9Hc04Lki";   
+    const MASTER_KEY = "$2a$10$ve9AM02bx2nrQYuIb4pzR.iG8wgbEZLmmvEOkTVM9NEpT9Hc04Lki";   
 
     const WHATSAPP_NUMBER = "573115082078"; 
     const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
@@ -339,9 +339,6 @@
 
     async function fetchProductsFromCloud() {
       try {
-        if (!BIN_ID || BIN_ID.includes("TU_BIN_ID")) {
-          throw new Error("Credenciales no configuradas");
-        }
         const response = await fetch(JSONBIN_URL, {
           headers: { 'X-Master-Key': MASTER_KEY }
         });
@@ -351,16 +348,12 @@
         renderProducts(products);
       } catch (error) {
         console.warn("Error cargando de la nube:", error);
-        document.getElementById('productGrid').innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--gold-primary);">Por favor configura correctamente tu BIN_ID y MASTER_KEY en el código.</p>`;
+        document.getElementById('productGrid').innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--gold-primary);">Error de conexión con la nube. Verifica tu conexión o credenciales.</p>`;
       }
     }
 
     async function syncProductsToCloud() {
       try {
-        if (!BIN_ID || BIN_ID.includes("TU_BIN_ID")) {
-          alert("Configura tus credenciales de JSONbin en el código.");
-          return;
-        }
         const response = await fetch(JSONBIN_URL, {
           method: 'PUT',
           headers: {
@@ -375,15 +368,15 @@
         renderProducts(products);
         renderAdminList();
       } catch (error) {
-        alert("Error al sincronizar con la nube. Verifica tu Master Key.");
+        alert("Error al sincronizar con la nube. Asegúrate de que el Bin en JSONbin no esté protegido contra escritura.");
       }
     }
 
     function renderProducts(items) {
       const grid = document.getElementById('productGrid');
       grid.innerHTML = '';
-      if(items.length === 0) {
-        grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 40px;">No hay productos registrados todavía. Entra al Modo Editor (1234) para agregar el primero.</p>`;
+      if(!items || items.length === 0) {
+        grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 40px;">No hay productos registrados todavía. Entra al Modo Editor (clave 1234) para agregar el primero con foto de archivo.</p>`;
         return;
       }
       items.forEach(p => {
@@ -527,7 +520,7 @@
     function renderAdminList() {
       const list = document.getElementById('adminProductList');
       list.innerHTML = '';
-      if(products.length === 0) {
+      if(!products || products.length === 0) {
         list.innerHTML = `<p style="color:var(--text-muted); text-align:center;">No hay productos para mostrar.</p>`;
         return;
       }
@@ -565,7 +558,7 @@
           oldPrice: document.getElementById('newOldPrice').value ? parseInt(document.getElementById('newOldPrice').value) : null,
           tag: document.getElementById('newTag').value,
           desc: document.getElementById('newDesc').value,
-          img: uploadEvent.target.result // Imagen guardada directo como archivo interno
+          img: uploadEvent.target.result // Foto cargada directamente como archivo
         };
         
         products.unshift(newP);
@@ -573,7 +566,7 @@
         
         btn.innerText = "Guardar y Sincronizar Globalmente";
         btn.disabled = false;
-        alert("¡Producto y foto guardados correctamente!");
+        alert("¡Producto y foto guardados correctamente en la nube!");
         e.target.reset();
       };
 
