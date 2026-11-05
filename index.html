@@ -70,7 +70,7 @@
     .product-card { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; transition: transform 0.3s, border-color 0.3s; position: relative; }
     .product-card:hover { transform: translateY(-5px); border-color: var(--gold-primary); }
     .product-tag { position: absolute; top: 12px; left: 12px; background: #000; color: var(--gold-primary); border: 1px solid var(--gold-primary); font-size: 0.65rem; font-weight: 700; padding: 4px 10px; border-radius: 10px; text-transform: uppercase; z-index: 2; }
-    .product-img { width: 100%; height: 280px; object-fit: cover; cursor: pointer; }
+    .product-img { width: 100%; height: 280px; object-fit: cover; cursor: pointer; background: #1a1a1a; }
     .product-info { padding: 18px; display: flex; flex-direction: column; flex-grow: 1; }
     .product-category { font-size: 0.7rem; text-transform: uppercase; color: var(--gold-primary); letter-spacing: 1px; margin-bottom: 5px; font-weight: 600; }
     .product-title { font-size: 1rem; margin-bottom: 8px; font-weight: 600; cursor: pointer; }
@@ -88,18 +88,17 @@
 
     .product-detail-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-top: 10px; }
     @media (max-width: 768px) { .product-detail-layout { grid-template-columns: 1fr; } }
-    .main-detail-img { width: 100%; height: 350px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border-color); }
+    .main-detail-img { width: 100%; height: 350px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border-color); background: #1a1a1a; }
 
     .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border-color); }
     .cart-total { font-size: 1.3rem; font-weight: bold; color: var(--gold-primary); text-align: right; margin: 20px 0; }
     .form-group { margin-bottom: 15px; }
     .form-group label { display: block; margin-bottom: 5px; font-size: 0.85rem; color: var(--gold-primary); }
     .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px; background: var(--bg-dark); border: 1px solid var(--border-color); color: #fff; border-radius: 6px; }
+    .form-group input[type="file"] { padding: 7px; cursor: pointer; color: var(--gold-primary); }
 
     .admin-product-row { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); padding: 10px 15px; border-radius: 6px; margin-bottom: 10px; }
     .btn-danger { background: #d9534f; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; }
-
-    .admin-box { background: rgba(212, 175, 55, 0.05); border: 1px solid var(--gold-primary); padding: 15px; border-radius: 8px; margin-bottom: 25px; }
 
     .loading-spinner { text-align: center; color: var(--gold-primary); font-size: 1.2rem; padding: 50px; }
 
@@ -173,7 +172,7 @@
     </div>
     <div class="feature-item">
       <i class="fa-solid fa-hand-holding-dollar"></i>
-      <h4>PAGO CONTRA ENTREGA</h4>
+      <h4>PAGA CONTRA ENTREGA</h4>
       <p>Paga cuando recibas tu pedido</p>
     </div>
     <div class="feature-item">
@@ -252,7 +251,7 @@
       <h2 style="color: var(--gold-primary); margin-bottom: 15px;"><i class="fa-solid fa-sliders"></i> Panel de Control & Sincronización</h2>
 
       <div style="margin-bottom: 25px;">
-        <h3 style="font-size: 0.95rem; color: var(--gold-primary); margin-bottom: 10px;">Agregar Nuevo Producto en la Nube</h3>
+        <h3 style="font-size: 0.95rem; color: var(--gold-primary); margin-bottom: 10px;">Subir Producto con Foto de Archivo</h3>
         <form onsubmit="addNewProduct(event)">
           <div class="form-group"><label>Título del Producto</label><input type="text" id="newTitle" required placeholder="Ej: Combo Lattafa"></div>
           <div class="form-group">
@@ -270,7 +269,12 @@
           </div>
           <div class="form-group"><label>Etiqueta</label><input type="text" id="newTag" placeholder="NUEVO"></div>
           <div class="form-group"><label>Descripción</label><textarea id="newDesc" rows="2" placeholder="Notas olfativas..."></textarea></div>
-          <div class="form-group"><label>URL de la Imagen</label><input type="url" id="newImg" required placeholder="https://images.unsplash.com/..."></div>
+          
+          <div class="form-group">
+            <label>Seleccionar Imagen desde tu Dispositivo</label>
+            <input type="file" id="newImgFile" accept="image/*" required>
+          </div>
+
           <button type="submit" id="saveProdBtn" class="btn-gold" style="width: 100%; justify-content: center;">Guardar y Sincronizar Globalmente</button>
         </form>
       </div>
@@ -343,8 +347,6 @@
         });
         if(!response.ok) throw new Error("Error en respuesta de API");
         const data = await response.json();
-        
-        // JSONbin v3 envuelve los datos en un objeto .record
         products = data.record || [];
         renderProducts(products);
       } catch (error) {
@@ -544,28 +546,38 @@
 
     async function addNewProduct(e) {
       e.preventDefault();
-      const btn = document.getElementById('saveProdBtn');
-      btn.innerText = "Sincronizando con la nube...";
-      btn.disabled = true;
+      const fileInput = document.getElementById('newImgFile');
+      if (fileInput.files.length === 0) return alert("Selecciona una imagen.");
 
-      const newP = {
-        id: Date.now(),
-        title: document.getElementById('newTitle').value,
-        category: document.getElementById('newCat').value,
-        price: parseInt(document.getElementById('newPrice').value),
-        oldPrice: document.getElementById('newOldPrice').value ? parseInt(document.getElementById('newOldPrice').value) : null,
-        tag: document.getElementById('newTag').value,
-        desc: document.getElementById('newDesc').value,
-        img: document.getElementById('newImg').value
+      const file = fileInput.files[0];
+      const reader = new FileReader();
+
+      reader.onload = async function(uploadEvent) {
+        const btn = document.getElementById('saveProdBtn');
+        btn.innerText = "Sincronizando con la nube...";
+        btn.disabled = true;
+
+        const newP = {
+          id: Date.now(),
+          title: document.getElementById('newTitle').value,
+          category: document.getElementById('newCat').value,
+          price: parseInt(document.getElementById('newPrice').value),
+          oldPrice: document.getElementById('newOldPrice').value ? parseInt(document.getElementById('newOldPrice').value) : null,
+          tag: document.getElementById('newTag').value,
+          desc: document.getElementById('newDesc').value,
+          img: uploadEvent.target.result // Imagen guardada directo como archivo interno
+        };
+        
+        products.unshift(newP);
+        await syncProductsToCloud();
+        
+        btn.innerText = "Guardar y Sincronizar Globalmente";
+        btn.disabled = false;
+        alert("¡Producto y foto guardados correctamente!");
+        e.target.reset();
       };
-      
-      products.unshift(newP);
-      await syncProductsToCloud();
-      
-      btn.innerText = "Guardar y Sincronizar Globalmente";
-      btn.disabled = false;
-      alert("¡Producto guardado y sincronizado en la nube para todos tus clientes!");
-      e.target.reset();
+
+      reader.readAsDataURL(file);
     }
 
     async function deleteProduct(id) {
