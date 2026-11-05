@@ -335,7 +335,7 @@
 
     async function fetchProductsFromCloud() {
       try {
-        if (!BIN_ID || BIN_ID.includes("6ae41607ac6210605a5de676")) {
+        if (!BIN_ID || BIN_ID.includes("TU_BIN_ID")) {
           throw new Error("Credenciales no configuradas");
         }
         const response = await fetch(JSONBIN_URL, {
@@ -355,7 +355,7 @@
 
     async function syncProductsToCloud() {
       try {
-        if (!BIN_ID || BIN_ID.includes("6ae41607ac6210605a5de676")) {
+        if (!BIN_ID || BIN_ID.includes("TU_BIN_ID")) {
           alert("Configura tus credenciales de JSONbin en el código.");
           return;
         }
