@@ -321,21 +321,13 @@
 
   <script>
     // ==========================================================
-    // 1. PEGA AQUÍ TUS CREDENCIALES DE JSONBIN (ENTRE COMILLAS)
+    // TUS CREDENCIALES DE JSONBIN (INGRESA TUS CÓDIGOS REALES AQUÍ)
     // ==========================================================
     const BIN_ID = "6ae41607ac6210605a5de676";       
     const MASTER_KEY = "$2a$10$vE9aM02bx2nrQYuIb4pzR.iG8wgbEZLmmvEOkTVM9NEpT9Hc04Lki";   
 
-    // WHATSAPP FIJO ANCLADO PARA LA TIENDA
     const WHATSAPP_NUMBER = "573115082078"; 
-
     const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
-
-    const DEFAULT_PRODUCTS = [
-      { id: 1, title: "Espada Oro Dama | Le Chameau 100 ML", category: "perfume", price: 189000, oldPrice: 260000, tag: "NUEVO", desc: "Frutal, floral y ambarino.", img: "https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?w=500&auto=format&fit=crop" },
-      { id: 2, title: "Black Diamond 100 ML", category: "perfume", price: 190000, oldPrice: 250000, tag: "MÁS VENDIDO", desc: "Especiado y ambarino.", img: "https://images.unsplash.com/photo-1541643600914-78b084683601?w=500&auto=format&fit=crop" },
-      { id: 3, title: "Cadena Tejido Chino 18K", category: "joyeria", price: 140000, oldPrice: 180000, tag: "GARANTÍA 18K", desc: "Tres capas de oro 18K.", img: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=500&auto=format&fit=crop" }
-    ];
 
     let products = [];
     let cart = JSON.parse(localStorage.getItem('al_cart')) || [];
@@ -346,24 +338,28 @@
         if (!BIN_ID || BIN_ID.includes("6ae41607ac6210605a5de676")) {
           throw new Error("Credenciales no configuradas");
         }
-        const response = await fetch(`${JSONBIN_URL}/latest`, {
+        const response = await fetch(JSONBIN_URL, {
           headers: { 'X-Master-Key': MASTER_KEY }
         });
         if(!response.ok) throw new Error("Error en respuesta de API");
         const data = await response.json();
+        
+        // JSONbin v3 envuelve los datos en un objeto .record
         products = data.record || [];
         renderProducts(products);
       } catch (error) {
-        console.warn("Cargando productos por defecto...", error);
-        products = DEFAULT_PRODUCTS;
-        renderProducts(products);
+        console.warn("Error cargando de la nube:", error);
+        document.getElementById('productGrid').innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--gold-primary);">Por favor configura correctamente tu BIN_ID y MASTER_KEY en el código.</p>`;
       }
     }
 
     async function syncProductsToCloud() {
       try {
-        if (!BIN_ID || BIN_ID.includes("6ae41607ac6210605a5de676")) return;
-        await fetch(JSONBIN_URL, {
+        if (!BIN_ID || BIN_ID.includes("6ae41607ac6210605a5de676")) {
+          alert("Configura tus credenciales de JSONbin en el código.");
+          return;
+        }
+        const response = await fetch(JSONBIN_URL, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -371,10 +367,13 @@
           },
           body: JSON.stringify(products)
         });
+        
+        if(!response.ok) throw new Error("No se pudo guardar en la nube");
+        
         renderProducts(products);
         renderAdminList();
       } catch (error) {
-        alert("Error al guardar en la nube.");
+        alert("Error al sincronizar con la nube. Verifica tu Master Key.");
       }
     }
 
@@ -382,7 +381,7 @@
       const grid = document.getElementById('productGrid');
       grid.innerHTML = '';
       if(items.length === 0) {
-        grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 40px;">No se encontraron productos.</p>`;
+        grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 40px;">No hay productos registrados todavía. Entra al Modo Editor (1234) para agregar el primero.</p>`;
         return;
       }
       items.forEach(p => {
@@ -396,8 +395,8 @@
               <p class="product-desc">${p.desc || ''}</p>
               <div class="product-rating"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i> (5.0)</div>
               <div class="product-pricing">
-                <span class="product-price">$${p.price.toLocaleString('es-CO')} COP</span>
-                ${p.oldPrice ? `<span class="product-old-price">$${p.oldPrice.toLocaleString('es-CO')}</span>` : ''}
+                <span class="product-price">$${Number(p.price).toLocaleString('es-CO')} COP</span>
+                ${p.oldPrice ? `<span class="product-old-price">$${Number(p.oldPrice).toLocaleString('es-CO')}</span>` : ''}
               </div>
               <button class="btn-add" onclick="addToCart(${p.id})"><i class="fa-solid fa-cart-shopping"></i> Añadir al Carrito</button>
             </div>
@@ -436,8 +435,8 @@
       document.getElementById('modalImg').src = activeProduct.img;
       document.getElementById('modalCat').innerText = getCategoryName(activeProduct.category);
       document.getElementById('modalTitle').innerText = activeProduct.title;
-      document.getElementById('modalPrice').innerText = `$${activeProduct.price.toLocaleString('es-CO')} COP`;
-      document.getElementById('modalOldPrice').innerText = activeProduct.oldPrice ? `$${activeProduct.oldPrice.toLocaleString('es-CO')} COP` : '';
+      document.getElementById('modalPrice').innerText = `$${Number(activeProduct.price).toLocaleString('es-CO')} COP`;
+      document.getElementById('modalOldPrice').innerText = activeProduct.oldPrice ? `$${Number(activeProduct.oldPrice).toLocaleString('es-CO')} COP` : '';
       document.getElementById('modalDesc').innerText = activeProduct.desc || '';
       document.getElementById('productModal').style.display = 'flex';
     }
@@ -477,7 +476,7 @@
         total += item.price;
         list.innerHTML += `
           <div class="cart-item">
-            <div><strong>${item.title}</strong><br><small style="color:var(--gold-primary);">$${item.price.toLocaleString('es-CO')} COP</small></div>
+            <div><strong>${item.title}</strong><br><small style="color:var(--gold-primary);">$${Number(item.price).toLocaleString('es-CO')} COP</small></div>
             <button onclick="removeFromCart(${index})" class="btn-danger"><i class="fa-solid fa-trash"></i></button>
           </div>
         `;
@@ -503,7 +502,7 @@
       let msg = `¡Hola AURA & LUXE! Deseo realizar el siguiente pedido:\n\n`;
       let total = 0;
       cart.forEach((item, i) => {
-        msg += `${i+1}. ${item.title} - $${item.price.toLocaleString('es-CO')} COP\n`;
+        msg += `${i+1}. ${item.title} - $${Number(item.price).toLocaleString('es-CO')} COP\n`;
         total += item.price;
       });
       msg += `\n*Total a Pagar:* $${total.toLocaleString('es-CO')} COP`;
@@ -526,12 +525,16 @@
     function renderAdminList() {
       const list = document.getElementById('adminProductList');
       list.innerHTML = '';
+      if(products.length === 0) {
+        list.innerHTML = `<p style="color:var(--text-muted); text-align:center;">No hay productos para mostrar.</p>`;
+        return;
+      }
       products.forEach((p, index) => {
         list.innerHTML += `
           <div class="admin-product-row">
             <div>
               <strong>${p.title}</strong><br>
-              <small style="color:var(--gold-primary);">$${p.price.toLocaleString('es-CO')} COP (${getCategoryName(p.category)})</small>
+              <small style="color:var(--gold-primary);">$${Number(p.price).toLocaleString('es-CO')} COP (${getCategoryName(p.category)})</small>
             </div>
             <button onclick="deleteProduct(${p.id})" class="btn-danger"><i class="fa-solid fa-trash"></i> Eliminar</button>
           </div>
@@ -555,12 +558,13 @@
         desc: document.getElementById('newDesc').value,
         img: document.getElementById('newImg').value
       };
+      
       products.unshift(newP);
       await syncProductsToCloud();
       
       btn.innerText = "Guardar y Sincronizar Globalmente";
       btn.disabled = false;
-      alert("¡Producto guardado e inmediatamente visible para todos tus clientes!");
+      alert("¡Producto guardado y sincronizado en la nube para todos tus clientes!");
       e.target.reset();
     }
 
