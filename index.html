@@ -28,7 +28,7 @@
 
     header { background-color: rgba(10, 10, 10, 0.95); border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px); }
     .header-container { max-width: 1200px; margin: 0 auto; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; gap: 15px; flex-wrap: wrap; }
-    .logo { font-size: 1.4rem; font-weight: 700; color: var(--gold-primary); text-decoration: none; display: flex; align-items: center; gap: 10px; }
+    .logo { font-size: 1.4rem; font-weight: 700; color: var(--gold-primary); text-decoration: none; display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
     .logo span { font-size: 0.7rem; display: block; color: var(--text-muted); letter-spacing: 2px; font-weight: 300; }
     
     .search-box { flex-grow: 1; max-width: 400px; position: relative; }
@@ -39,7 +39,6 @@
     .header-actions { display: flex; align-items: center; gap: 12px; }
     .action-btn { background: transparent; border: 1px solid var(--border-color); color: var(--text-light); padding: 8px 14px; border-radius: 20px; cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; gap: 6px; transition: all 0.3s; text-decoration: none; }
     .action-btn:hover { border-color: var(--gold-primary); color: var(--gold-primary); }
-    .action-btn.editor-btn { background: rgba(212, 175, 55, 0.1); border-color: var(--gold-primary); color: var(--gold-primary); font-weight: 600; }
     .cart-badge { background: var(--gold-primary); color: #000; font-size: 0.75rem; font-weight: bold; border-radius: 50%; padding: 2px 6px; }
 
     .hero { max-width: 1200px; margin: 30px auto; padding: 0 20px; display: grid; grid-template-columns: 1.2fr 1fr; gap: 30px; align-items: center; }
@@ -121,10 +120,11 @@
 
   <header>
     <div class="header-container">
-      <a href="#" class="logo">
+      <!-- Haz doble clic rápido en el logo para abrir el panel de administración -->
+      <div class="logo" ondblclick="openAdminModal()">
         <i class="fa-solid fa-crown" style="color: var(--gold-primary);"></i>
         <div>AURA & LUXE <span>EL TOQUE FINAL DE TU ELEGANCIA.</span></div>
-      </a>
+      </div>
       
       <div class="search-box">
         <i class="fa-solid fa-magnifying-glass"></i>
@@ -132,9 +132,6 @@
       </div>
 
       <div class="header-actions">
-        <button class="action-btn editor-btn" onclick="openAdminModal()">
-          <i class="fa-solid fa-sliders"></i> Modo Editor
-        </button>
         <a id="headerWpBtn" href="https://wa.me/573115082078" target="_blank" class="action-btn"><i class="fa-brands fa-whatsapp"></i></a>
         <button class="action-btn" onclick="openCartModal()">
           <i class="fa-solid fa-cart-shopping"></i> <span class="cart-badge" id="cartCount">0</span>
@@ -251,7 +248,7 @@
       <h2 style="color: var(--gold-primary); margin-bottom: 15px;"><i class="fa-solid fa-sliders"></i> Panel de Control Global - AURA & LUXE</h2>
 
       <div style="margin-bottom: 25px;">
-        <h3 style="font-size: 0.95rem; color: var(--gold-primary); margin-bottom: 10px;">Publicar Producto en la Nube (Foto de Archivo)</h3>
+        <h3 style="font-size: 0.95rem; color: var(--gold-primary); margin-bottom: 10px;">Publicar Producto en la Nube</h3>
         <form onsubmit="addNewProduct(event)">
           <div class="form-group"><label>Título del Producto</label><input type="text" id="newTitle" required placeholder="Ej: Perfume Lattafa Asad"></div>
           <div class="form-group">
@@ -271,7 +268,7 @@
           <div class="form-group"><label>Descripción</label><textarea id="newDesc" rows="2" placeholder="Notas olfativas..."></textarea></div>
           
           <div class="form-group">
-            <label>Seleccionar Imagen del Producto</label>
+            <label>Seleccionar Imagen del Producto (Usa una imagen ligera)</label>
             <input type="file" id="newImgFile" accept="image/*" required>
           </div>
 
@@ -323,12 +320,10 @@
     </div>
   </footer>
 
-  <!-- CONEXIÓN DE FIREBASE SDK DE GOOGLE -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, query } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
-    // TUS CREDENCIALES DE FIREBASE CREADAS
     const firebaseConfig = {
       apiKey: "AIzaSyBMv6qFwOnFWbfMvXh8m8DOzgIVZmGuCek",
       authDomain: "auraluxestore-501f1.firebaseapp.com",
@@ -349,7 +344,6 @@
     window.cart = JSON.parse(localStorage.getItem('al_cart')) || [];
     window.activeProduct = null;
 
-    // ESCUCHAR CAMBIOS EN LA NUBE EN TIEMPO REAL
     const q = query(productsRef);
     onSnapshot(q, (snapshot) => {
       window.products = [];
@@ -359,14 +353,13 @@
       renderProducts(window.products);
     }, (error) => {
       console.error("Error en conexión:", error);
-      document.getElementById('productGrid').innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--gold-primary);">Asegúrate de haber activado la base de datos Firestore en 'modo de prueba' desde la consola de Firebase.</p>`;
     });
 
     window.renderProducts = function(items) {
       const grid = document.getElementById('productGrid');
       grid.innerHTML = '';
       if(!items || items.length === 0) {
-        grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 40px;">No hay productos registrados en la nube todavía. Entra al Modo Editor (1234) para publicar el primero.</p>`;
+        grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 40px;">Explora nuestras colecciones exclusivas de temporada.</p>`;
         return;
       }
       items.forEach(p => {
@@ -498,11 +491,13 @@
       window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank');
     };
 
+    // ACCESO SECRETO MEDIANTE DOBLE CLIC EN EL LOGO CON CLAVE "7492"
     window.openAdminModal = function() {
-      if(prompt("Ingresa la clave de administración:") === "1234") {
+      const pass = prompt("Acceso restringido:");
+      if(pass === "7492") {
         renderAdminList();
         document.getElementById('adminModal').style.display = 'flex';
-      } else if(prompt !== null) {
+      } else if(pass !== null) {
         alert("Clave incorrecta.");
       }
     };
@@ -556,12 +551,12 @@
           
           btn.innerText = "Publicar en la Nube";
           btn.disabled = false;
-          alert("¡Producto publicado en tiempo real! Todos tus clientes ya lo pueden ver.");
+          alert("¡Producto publicado correctamente en la nube!");
           e.target.reset();
           closeModal('adminModal');
         } catch(err) {
           console.error(err);
-          alert("Error publicando en Firebase. Revisa las reglas de seguridad de Firestore.");
+          alert("Error publicando. Asegúrate de usar una imagen ligera (recórtala o usa una más pequeña).");
           btn.innerText = "Publicar en la Nube";
           btn.disabled = false;
         }
